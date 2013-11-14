@@ -36,11 +36,13 @@
    #
 
 
-#PowerShell v3 or higher
+#PowerShell v3 or higher if you use the PSScriptRoot variable
 #The -Force argument unloads the module first, which is good especially for dev. 
-Import-Module $PSScriptRoot\modules\Netapp.psm1 -Force
-Import-Module $PSScriptRoot\modules\VMware.psm1 -Force
-Import-Module $PSScriptRoot\modules\CiscoUCS.psm1 -Force
+#TODO - find a way to import all scripts in these directories
+Import-Module $PSScriptRoot\modules\utility\Netapp.psm1 -Force
+Import-Module $PSScriptRoot\modules\utility\VMware.psm1 -Force
+
+#Import-Module $PSScriptRoot\modules\buildout\CiscoUCS.psm1 -Force
 
 Import-Module CiscoUcsPs
 Import-Module DataONTAP

@@ -1,4 +1,13 @@
 
+
+function Set-MaintenanceMode {
+    #Probably not going to do this, it's a one-liner as is
+    #http://aravindsivaraman.wordpress.com/2012/07/06/set-maintenance-mode-using-power-cli/
+}
+export-modulemember -function Set-MaintenanceMode
+
+
+
 function Delete-VMKonAllHosts {
         param(
         [string] $vmkName

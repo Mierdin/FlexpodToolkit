@@ -24,6 +24,28 @@
                In summary, the module named CiscoUCS doesn't necessarily just reach into Cisco UCS.
 #>
 
+
+#####TODO#######
+#need to make this script create boot policies in UCS after looking at the Netapp target interfaces
+
+#Modularize:
+   #https://www.simple-talk.com/sysadmin/powershell/an-introduction-to-powershell-modules/
+   #http://social.technet.microsoft.com/Forums/windowsserver/en-US/941c1a0d-e359-4243-9fc5-82e95c2a4c9d/powershell-v3-and-importmodule-ps1
+   #http://msdn.microsoft.com/en-us/library/windows/desktop/dd878340(v=vs.85).aspx
+   #http://msdn.microsoft.com/en-us/library/dd901839(v=vs.85).aspx
+   #http://msdn.microsoft.com/en-us/library/dd878284(v=vs.85).aspx
+   #http://msdn.microsoft.com/en-us/library/dd878340(v=vs.85).aspx
+   #http://stackoverflow.com/questions/10283622/load-multiple-modules-psm1-using-a-single-psd1-file
+   #http://technet.microsoft.com/library/hh849725.aspx
+   #http://stackoverflow.com/questions/14382579/relative-path-in-import-module
+   #
+   #
+   #
+   #/modules/buildout/CiscoUCS.psm1
+
+
+
+
 #PowerShell v3 or higher if you use the PSScriptRoot variable
 #The -Force argument unloads the module first, which is good especially for dev. Powershell likes to remember old modules, making your changes not take effect.
 #TODO - find a way to import all scripts in these directories

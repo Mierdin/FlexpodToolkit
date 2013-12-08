@@ -1,4 +1,13 @@
-
+function Add-NFSDataStore {
+    Get-VMHost | foreach {
+        $_ | New-Datastore -Nfs:$true -Name SAS01 -NfsHost 10.102.160.11 -Path "/SAS01"
+        $_ | New-Datastore -Nfs:$true -Name SAS02 -NfsHost 10.102.160.12 -Path "/SAS02"
+        $_ | New-Datastore -Nfs:$true -Name SAS03 -NfsHost 10.102.160.13 -Path "/SAS03"
+        $_ | New-Datastore -Nfs:$true -Name SAS04 -NfsHost 10.102.160.14 -Path "/SAS04"
+        $_ | New-Datastore -Nfs:$true -Name SATA01 -NfsHost 10.102.160.11 -Path "/SATA01"
+    }
+}
+export-modulemember -function Add-NFSDataStore
 
 function Set-MaintenanceMode {
     #Probably not going to do this, it's a one-liner as is
@@ -24,24 +33,26 @@ export-modulemember -function Delete-VMKonAllHosts
 function Create-VMKonAllHosts {
         
     #Must use below format for stating subnet of new VMK ports (everything but the numbers in the last octet - that's generated automatically)
-    $newSubnet = "10.102.32."
+    $newSubnet = "10.102.160."
     $subnetMask = "255.255.255.0"
-    $strPG = "1KV_CTRL"
+    $strPG = "NFS"
  
     #Using the $_ method here, equivalent to the "this" nomenclature in java and .net
     Get-VMHost | foreach {
+    
     
         #pull address of management VMK to use as a baseline for new address (use the same last octet)
         $thisVMK = $_ | Get-VMHostNetworkAdapter -name vmk0
  
         #Retrieve last octet, without decimal
         $lastOctet = $thisVMK.IP.substring($thisVMK.IP.LastIndexOf(".") + 1, $thisVMK.IP.Length - $thisVMK.IP.LastIndexOf(".") - 1)
+        if ($lastOctet -le 23) {
+            $thisIPaddr = [string]::Concat($newSubnet, $lastOctet.ToString())
  
-        $thisIPaddr = [string]::Concat($newSubnet, $lastOctet.ToString())
- 
-        New-VMHostNetworkAdapter -VMHost $_ -VirtualSwitch vSwitch0 -PortGroup $strPG -IP $thisIPaddr -SubnetMask $subnetMask -VMotionEnabled:$True
-        $PG = Get-VirtualPortgroup -Name $strPG -VMHost $_ 
-
+            New-VMHostNetworkAdapter -VMHost $_ -VirtualSwitch vSwitch0 -PortGroup $strPG -IP $thisIPaddr -SubnetMask $subnetMask -VMotionEnabled:$False
+            $PG = Get-VirtualPortgroup -Name $strPG -VMHost $_ 
+            Write-Host "Added to host " $thisVMK.IP 
+        } 
         #Need to create a vMotion port group first, else this line will error out.
         #If you're adding it to a "mode access" port group in the 1000v, it doesn't matter. That's why I haven't fixed it yet.
         #Set-VirtualPortGroup -VirtualPortGroup $PG -VlanId 241

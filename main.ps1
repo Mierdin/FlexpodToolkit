@@ -27,31 +27,15 @@
 
 #####TODO#######
 #need to make this script create boot policies in UCS after looking at the Netapp target interfaces
-
-#Modularize:
-   #https://www.simple-talk.com/sysadmin/powershell/an-introduction-to-powershell-modules/
-   #http://social.technet.microsoft.com/Forums/windowsserver/en-US/941c1a0d-e359-4243-9fc5-82e95c2a4c9d/powershell-v3-and-importmodule-ps1
-   #http://msdn.microsoft.com/en-us/library/windows/desktop/dd878340(v=vs.85).aspx
-   #http://msdn.microsoft.com/en-us/library/dd901839(v=vs.85).aspx
-   #http://msdn.microsoft.com/en-us/library/dd878284(v=vs.85).aspx
-   #http://msdn.microsoft.com/en-us/library/dd878340(v=vs.85).aspx
-   #http://stackoverflow.com/questions/10283622/load-multiple-modules-psm1-using-a-single-psd1-file
-   #http://technet.microsoft.com/library/hh849725.aspx
-   #http://stackoverflow.com/questions/14382579/relative-path-in-import-module
-   #
-   #
-   #
-   #/modules/buildout/CiscoUCS.psm1
+#Need to Set-PowerCLIConfiguration so that InvalidCertificateAction is updated to accept any and all certificates so logging in can happen seamlessly
 
 
-
-
-#PowerShell v3 or higher if you use the PSScriptRoot variable
+#Must run PowerShell v3 or higher if you use the PSScriptRoot variable
 #The -Force argument unloads the module first, which is good especially for dev. Powershell likes to remember old modules, making your changes not take effect.
-#TODO - find a way to import all scripts in these directories
+#TODO - find a way to import all modules found in these directories
 Import-Module $PSScriptRoot\modules\utility\util_netapp.psm1 -Force
 Import-Module $PSScriptRoot\modules\utility\util_vmware.psm1 -Force
-#Import-Module $PSScriptRoot\modules\buildout\build_ucs.psm1 -Force #Good as a standalone script, but not ready yet, need to make into functions before integrating here
+Import-Module $PSScriptRoot\modules\buildout\build_ucs.psm1 -Force
 Import-Module $PSScriptRoot\modules\buildout\build_vmware.psm1 -Force
  
 Add-PSSnapin VMware*
@@ -70,11 +54,13 @@ $NAbootVol = "/vol/FC_BootVol1/" #Needs to be of this format, including the forw
 $UCSipAddr = "10.102.1.5"
 $UCSusername = "admin"
 $UCSpassword = "password"
-$organization = "org"
+$organization = "DCA"
 
 $VMWipAddr = "10.102.43.16"
-$VMWusername = "root"
+$VMWusername = "admin"
 $VMWpassword = "password"
+
+$Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 #endregion
 
@@ -83,8 +69,8 @@ $VMWpassword = "password"
 #Connect to Netapp, suppressing prompts
 $NASecPass = ConvertTo-SecureString $NApassword -AsPlainText -Force
 $NAcred = New-Object System.Management.Automation.PSCredential($NAusername, $NASecPass)
-Disconnect from Controller First
-Connect-NcController $NAipAddr -credential $NAcred
+#Disconnect from Controller First
+#Connect-NcController $NAipAddr -credential $NAcred
 
 #Connect to UCSM, suppressing prompts
 $UCSSecPass = ConvertTo-SecureString $UCSpassword -AsPlainText -Force
@@ -94,9 +80,19 @@ Connect-Ucs $UCSipAddr -Credential $ucsmCreds
 
 #Connect to vCenter, suppressing prompts
 #Disconnect-VIServer
-Connect-VIServer $VMWipAddr -User $VMWusername -Password $VMWpassword -Force
+#Connect-VIServer $VMWipAddr -User $VMWusername -Password $VMWpassword -Force
+
+#TODO: need to address - WARNING: THE DEFAULT BEHAVIOR UPON INVALID SERVER CERTIFICATE WILL CHANGE IN A FUTURE RELEASE. To ensure scripts are not affected by the change, use Set-PowerCLIConfiguration to set a value for the InvalidCertificateAction option.
 
 #endregion
+
+
+
+
+
+
+
+
 
 
 
@@ -107,34 +103,11 @@ Connect-VIServer $VMWipAddr -User $VMWusername -Password $VMWpassword -Force
 
 
 
-<#
-
-#Random code snippets that are useful, but dont really have a home
-
-for ($i=1; $i -le 60; $i++) {
-    $iPlus20 = $i + 20
-    Add-DnsServerResourceRecordA -Name ESXi-$i -ZoneName example.com -IPv4Address "10.102.40.$iPlus20"
-    Add-DnsServerResourceRecordPtr -Name "$iPlus20" -ZoneName "40.102.10.in-addr.arpa" -PtrDomainName "ESXi-$i.example.com"
-}
-
-$SPS = Get-UcsServiceProfile -Type instance -SrcTemplName SPT-ESXi
-foreach ($SP in $SPS) {
-    $SP | Set-UcsServerPower -State admin-up -Force
-    Write-Host "Powered up " $SP.name
-    Start-Sleep -s 300
-}
 
 
-This was created as a test to quickly delete and reprovision netapp LUNs for some AutoDeploy hacking
-Remove-NcLun -Path "/vol/FC_BootVol1/DCA-ESXi-11_boot" -VserverContext $NAvserver -Force
-Remove-NcIgroup -VserverContext $NAvserver -Force -Name "DCA-ESXi-11"
-
-#>
-
-
-
-
-
+#Time to show off
+Write-Host "Script completed in: " $Elapsed.Elapsed
+     
 
 
  

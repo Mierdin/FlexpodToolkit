@@ -1,4 +1,5 @@
 ﻿<# 
+#TODO: I believe this syntax is for defining a module like this. There is also a syntax for defining help info for specific functions that you might want to use as well. I believe you can use the "vshield.ps1" thing you wrote as an example.
  .Synopsis
   Allows a PowerShell script to simply and quickly automate Netapp-related tasks within a Flexpod.
 
@@ -37,8 +38,16 @@
    Show-Calendar -HighlightDay (1..10 + 22) -HighlightDate "December 25, 2008"
 #>
 
+<# 
+function Update-Igroup {
+ #Use this function to "true up" an igroup so that if you add servers, you can add access to new blades without any conflicts, or manual intervention. Same idea as BFS function but catered torwards shared storage   
+ #Would be nice to provide an easy way to exclude certain servers/WWPNs so that you don't have to create a single big igroup, in case you want to mask certain groups or clusters separately (i.e. management clusters)
+}
+#>
+
 
 #Create igroups and LUNs
+#TODO: Need to rename this function to reflect that it's aimed at BFS configuration. There should be a second function that "trues up" an single igroup for many servers, but in similar fashion.
 function Create-IGroupsAndLuns {
     
 #Reaches into a Cisco UCS Instance, and iterates through every service profile, creating Netapp initiator groups
@@ -202,7 +211,13 @@ function Generate-FCSwitchConfig {
 }
 export-modulemember -function Generate-FCSwitchConfig
 
+function Get-BootTargets {
+    Get-Nc
+}
+export-modulemember -function Get-BootTargets
+
 function Show-Calendar {
+#This is an example of a function with arguments
     param(
         [DateTime] $start = [DateTime]::Today,
         [DateTime] $end = $start,

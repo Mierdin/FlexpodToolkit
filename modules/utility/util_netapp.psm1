@@ -43,8 +43,20 @@ function Update-Igroup {
  #Use this function to "true up" an igroup so that if you add servers, you can add access to new blades without any conflicts, or manual intervention. Same idea as BFS function but catered torwards shared storage   
  #Would be nice to provide an easy way to exclude certain servers/WWPNs so that you don't have to create a single big igroup, in case you want to mask certain groups or clusters separately (i.e. management clusters)
 }
+export-modulemember -function Update-Igroup
 #>
 
+function Get-BootTargets {
+    Get-NcFcpInterface
+    #Gotta select one WWPN per node - gotta find out how to correspond target address with node name
+}
+export-modulemember -function Get-BootTargets
+
+function Create-vServer {
+    $newVServer = New-NcVserver -Name $NAvserver -RootVolume $NAvserverRootVol -RootVolumeAggregate "aggr1_DCB6250_02_SATA" -RootVolumeSecurityStyle UNIX -NameServerSwitch nis
+    Set-NcVserver -Name $NAvserver -DisallowedProtocols iscsi,nfs 
+}
+export-modulemember -function Create-vServer
 
 #Create igroups and LUNs
 #TODO: Need to rename this function to reflect that it's aimed at BFS configuration. There should be a second function that "trues up" an single igroup for many servers, but in similar fashion.
@@ -95,7 +107,6 @@ function Create-IGroupsAndLuns {
 }
 export-modulemember -function Create-IGroupsAndLuns
 
-
 #Generate FC switch config
 function Generate-FCSwitchConfig {
 
@@ -142,19 +153,19 @@ function Generate-FCSwitchConfig {
 
     #create zones 
     $WWPNTableFabA.GetEnumerator() | Sort-Object Name | % { 
-        Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 235")
+        Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 435")
         Add-Content $ConfigFile ("member pwwn " + $($_.value))
         #Need to add an argument to this function that pulls the four values from the UCS boot policy and uses them
-        Add-Content $ConfigFile "member pwwn 20:09:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:0b:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:0d:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:0f:00:a0:98:46:b8:21"
+        Add-Content $ConfigFile "member pwwn 20:01:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:03:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:05:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:07:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "!"
     }
     Add-Content $ConfigFile "!"
 
     #create zoneset
-    Add-Content $ConfigFile "zoneset name ZONESET_VSAN_235 vsan 235"
+    Add-Content $ConfigFile "zoneset name ZONESET_VSAN_435 vsan 435"
 
     #add zones to zoneset 
     $WWPNTableFabA.GetEnumerator() | Sort-Object Name | % { 
@@ -163,7 +174,7 @@ function Generate-FCSwitchConfig {
 
     Add-Content $ConfigFile "!"
 
-    Add-Content $ConfigFile "zoneset activate name ZONESET_VSAN_235 vsan 235"
+    Add-Content $ConfigFile "zoneset activate name ZONESET_VSAN_435 vsan 435"
 
     Add-Content $ConfigFile "!"
 
@@ -182,20 +193,20 @@ function Generate-FCSwitchConfig {
     
     #create zones 
     $WWPNTableFabB.GetEnumerator() | Sort-Object Name | % { 
-        Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 236")
+        Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 436")
         Add-Content $ConfigFile ("member pwwn " + $($_.value))
         #Need to add an argument to this function that pulls the four values from the UCS boot policy and uses them
-        Add-Content $ConfigFile "member pwwn 20:0a:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:0c:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:0e:00:a0:98:46:b8:21"
-        Add-Content $ConfigFile "member pwwn 20:10:00:a0:98:46:b8:21"
+        Add-Content $ConfigFile "member pwwn 20:00:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:02:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:04:00:a0:98:46:b6:21"
+        Add-Content $ConfigFile "member pwwn 20:06:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "!"
     }
 
     Add-Content $ConfigFile "!"
 
     #create zoneset
-    Add-Content $ConfigFile "zoneset name ZONESET_VSAN_236 vsan 236"
+    Add-Content $ConfigFile "zoneset name ZONESET_VSAN_436 vsan 436"
 
     #add zones to zoneset 
     $WWPNTableFabB.GetEnumerator() | Sort-Object Name | % { 
@@ -204,7 +215,7 @@ function Generate-FCSwitchConfig {
 
     Add-Content $ConfigFile "!"
 
-    Add-Content $ConfigFile "zoneset activate name ZONESET_VSAN_236 vsan 236"
+    Add-Content $ConfigFile "zoneset activate name ZONESET_VSAN_436 vsan 436"
 
     Add-Content $ConfigFile "!"
 

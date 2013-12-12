@@ -44,21 +44,25 @@ Import-Module DataONTAP
 
 #region VARs
 
-$NAipAddr = "10.102.0.50"
+$NAipAddr = "10.104.0.50"
 $NAusername = "admin"
-$NApassword = "password"
+$NApassword = "netapp123"
 $NAportset = "fcoe_pset_1"
-$NAvserver = "DCA_FC_VS1"
+$NAvserver = "DCB_FC_VS1"
+$NAvserverRootVol = "DCB_FC_VS1_root"
 $NAbootVol = "/vol/FC_BootVol1/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
 
-$UCSipAddr = "10.102.1.5"
+$UCSipAddr = "10.104.1.5"
 $UCSusername = "admin"
-$UCSpassword = "password"
-$organization = "DCA"
+$UCSpassword = "ciscoucs"
+$organization = "DCB"
+$mgmt_ippoolstart = "10.104.1.50"
+$mgmt_ippoolfinish = "10.104.1.200"
+$mgmt_ippoolgw = "10.104.1.1"
 
-$VMWipAddr = "10.102.43.16"
-$VMWusername = "admin"
-$VMWpassword = "password"
+$VMWipAddr = "10.104.43.15"
+$VMWusername = "root"
+$VMWpassword = "vmware"
 
 $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -70,7 +74,7 @@ $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 $NASecPass = ConvertTo-SecureString $NApassword -AsPlainText -Force
 $NAcred = New-Object System.Management.Automation.PSCredential($NAusername, $NASecPass)
 #Disconnect from Controller First
-#Connect-NcController $NAipAddr -credential $NAcred
+Connect-NcController $NAipAddr -credential $NAcred
 
 #Connect to UCSM, suppressing prompts
 $UCSSecPass = ConvertTo-SecureString $UCSpassword -AsPlainText -Force
@@ -93,9 +97,18 @@ Connect-Ucs $UCSipAddr -Credential $ucsmCreds
 
 
 
+#Create-IGroupsAndLuns
+#Generate-FCSwitchConfig
 
 
-
+# ***** UCS TASKS  *****
+#UCS-Housekeeping
+#Create-VLANsAndVSANs
+#Create-ResourcePools
+#Create-StaticPolicies
+Create-BootPolicy
+#Create-vNICvHBATemplates
+#Create-SPTemplates
 
 
 #There will be a menu structure here in the next release, allowing you to easy and simply select provided cmdlets from a menu

@@ -58,13 +58,4 @@ function Set-VMHostStaticIPs {
 }
 export-modulemember -function Set-VMHostStaticIPs
 
-
-function Select-Folder($message='Select a folder', $path = 0) {  
-    $object = New-Object -comObject Shell.Application   
- 
-    $folder = $object.BrowseForFolder(0, $message, 0, $path)  
-    if ($folder -ne $null) {  
-        $folder.self.Path  
-    }  
-
-}
+Write-Host "Loaded build_vmware.psm1"

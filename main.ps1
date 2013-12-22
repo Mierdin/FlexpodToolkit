@@ -26,13 +26,17 @@
 
 
 #####TODO#######
-#need to make this script create boot policies in UCS after looking at the Netapp target interfaces
-#Need to Set-PowerCLIConfiguration so that InvalidCertificateAction is updated to accept any and all certificates so logging in can happen seamlessly
-
+#TODO: need to make this script create boot policies in UCS after looking at the Netapp target interfaces
+#TODO: Need to Set-PowerCLIConfiguration so that InvalidCertificateAction is updated to accept any and all certificates so logging in can happen seamlessly
+#TODO: Figure out how to fix unencrypted KVM issue and set here?
+#TODO: Need to consider the process to add a zero programmatically (i.e. ESXi-01 vs ESXi-1). Need to figure out where this kind of thing would need to be applied, as well as consider the pros and cons of doing this.
+        #big thing is when creating service profiles, you have to provide a prefix. If you just say "ESXi-" then it will start with "ESXi-1". There is no assumption about length. This length is what you have to impart.
+#TODO: As a best practice, should figure out a way to hide all output and then create your own. The script will look a lot better.
+#TODO: Figure out the "unapproved verbs" error. Also output something that lets the user know that modules are being imported
 
 #Must run PowerShell v3 or higher if you use the PSScriptRoot variable
 #The -Force argument unloads the module first, which is good especially for dev. Powershell likes to remember old modules, making your changes not take effect.
-#TODO - find a way to import all modules found in these directories
+#TODO - maybe import all modules found in these directories so you don't have to update this when adding new modules
 Import-Module $PSScriptRoot\modules\utility\util_netapp.psm1 -Force
 Import-Module $PSScriptRoot\modules\utility\util_vmware.psm1 -Force
 Import-Module $PSScriptRoot\modules\buildout\build_ucs.psm1 -Force
@@ -41,28 +45,30 @@ Import-Module $PSScriptRoot\modules\buildout\build_vmware.psm1 -Force
 Add-PSSnapin VMware*
 Import-Module CiscoUcsPs
 Import-Module DataONTAP
+Write-Host "Imported Vendor Cmdlets"
 
 #region VARs
 
-$NAipAddr = "10.104.0.50"
-$NAusername = "admin"
-$NApassword = "netapp123"
+$NAipAddr = ""
+$NAusername = ""
+$NApassword = ""
 $NAportset = "fcoe_pset_1"
-$NAvserver = "DCB_FC_VS1"
-$NAvserverRootVol = "DCB_FC_VS1_root"
+$NAvserver = "FC_VS1"
+$NAvserverRootVol = "FC_VS1_root"
 $NAbootVol = "/vol/FC_BootVol1/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
 
-$UCSipAddr = "10.104.1.5"
-$UCSusername = "admin"
-$UCSpassword = "ciscoucs"
-$organization = "DCB"
-$mgmt_ippoolstart = "10.104.1.50"
-$mgmt_ippoolfinish = "10.104.1.200"
-$mgmt_ippoolgw = "10.104.1.1"
+$UCSipAddr = ""
+$UCSusername = ""
+$UCSpassword = ""
+$organization = ""
+$mgmt_ippoolstart = ""
+$mgmt_ippoolfinish = ""
+$mgmt_ippoolgw = ""
 
-$VMWipAddr = "10.104.43.15"
-$VMWusername = "root"
-$VMWpassword = "vmware"
+$VMWipAddr = ""
+$VMWusername = ""
+$VMWpassword = ""
+
 
 $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
@@ -83,49 +89,38 @@ Disconnect-Ucs
 Connect-Ucs $UCSipAddr -Credential $ucsmCreds
 
 #Connect to vCenter, suppressing prompts
-#Disconnect-VIServer
-#Connect-VIServer $VMWipAddr -User $VMWusername -Password $VMWpassword -Force
-
-#TODO: need to address - WARNING: THE DEFAULT BEHAVIOR UPON INVALID SERVER CERTIFICATE WILL CHANGE IN A FUTURE RELEASE. To ensure scripts are not affected by the change, use Set-PowerCLIConfiguration to set a value for the InvalidCertificateAction option.
+Disconnect-VIServer
+Set-PowerCliConfiguration -InvalidCertificateAction Ignore
+Connect-VIServer $VMWipAddr -User $VMWusername -Password $VMWpassword -Force
 
 #endregion
 
+#
 
+#Generate-SPsFromTemplate
+#Create-VMKonAllHosts -locationFilter DCBCLOUDORC01 -newSubnet "10.104.41." -subnetMask "255.255.255.0" -strPG "vMotion" -vMotionEnabled:$True -VMKMTU 9000 -addVmnic1:$True
+#Create-VMKonAllHosts -locationFilter DCBCLOUDORC01 -newSubnet "10.104.32." -subnetMask "255.255.255.0" -strPG "l3_control" -vMotionEnabled:$False -VMKMTU 1500 -addVmnic1:$False
+#Create-VMKonAllHosts -locationFilter DCBCLOUDORC01 -newSubnet "10.104.160." -subnetMask "255.255.240.0" -strPG "NFS" -vMotionEnabled:$False -VMKMTU 9000 -addVmnic1:$False
 
+#Migrate-VMKandUplinks -locationFilter DCBCLOUDORC01
 
+#Update-Igroup
 
+#Add-NFSDataStore 
 
-
-
-#Create-IGroupsAndLuns
+#Update-NetappCiscoBFS
 #Generate-FCSwitchConfig
-
 
 # ***** UCS TASKS  *****
 #UCS-Housekeeping
 #Create-VLANsAndVSANs
 #Create-ResourcePools
 #Create-StaticPolicies
-Create-BootPolicy
+#Create-BootPolicy
 #Create-vNICvHBATemplates
 #Create-SPTemplates
 
-
-#There will be a menu structure here in the next release, allowing you to easy and simply select provided cmdlets from a menu
-
-
-
-
-
+#There will be a menu structure here in an upcoming release, allowing you to easy and simply select provided cmdlets from a menu
 
 #Time to show off
 Write-Host "Script completed in: " $Elapsed.Elapsed
-     
-
-
- 
-
-
-
-
-

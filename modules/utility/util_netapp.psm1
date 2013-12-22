@@ -1,50 +1,47 @@
-﻿<# 
-#TODO: I believe this syntax is for defining a module like this. There is also a syntax for defining help info for specific functions that you might want to use as well. I believe you can use the "vshield.ps1" thing you wrote as an example.
- .Synopsis
-  Allows a PowerShell script to simply and quickly automate Netapp-related tasks within a Flexpod.
+﻿<#
+.SYNOPSIS
+"Trues up" an initiator group.
 
- .Description
-  Displays a visual representation of a calendar. This function supports multiple months
-  and lets you highlight specific date ranges or days.
+.DESCRIPTION
+Description
 
- .Parameter Start
-  The first month to display.
+.PARAMETER computername
+Here, the dotted keyword is followed by a single parameter name. Don't precede that with a hyphen. The following lines describe the purpose of the parameter:
 
- .Parameter End
-  The last month to display.
+.PARAMETER filePath
+Provide a PARAMETER section for each parameter that your script or function accepts.
 
- .Parameter FirstDayOfWeek
-  The day of the month on which the week begins.
+.EXAMPLE
+There's no need to number your examples.
 
- .Parameter HighlightDay
-  Specific days (numbered) to highlight. Used for date ranges like (25..31).
-  Date ranges are specified by the Windows PowerShell range syntax. These dates are
-  enclosed in square brackets.
-
- .Parameter HighlightDate
-  Specific days (named) to highlight. These dates are surrounded by asterisks.
-  
-
- .Example
-   # Show a default display of this month.
-   Show-Calendar
-
- .Example
-   # Display a date range.
-   Show-Calendar -Start "March, 2010" -End "May, 2010"
-
- .Example
-   # Highlight a range of days.
-   Show-Calendar -HighlightDay (1..10 + 22) -HighlightDate "December 25, 2008"
+.EXAMPLE
+PowerShell will number them for you when it displays your help text to a user.
 #>
-
-<# 
 function Update-Igroup {
+#TODO: Also need to make this extensible. Either allow multiple igroups and customization based on which SPs get added to which igroup, or at least allow a narrowing down of igroup members so that you can do them manually one at a time using this function.
+
+    #We only want Service Profile Instances, not Templates
+    $serviceProfiles = Get-UcsServiceProfile -Type instance -Org $organization
+
+    #Iterate through Service Profiles, creating boot luns and igroups, mapping as you go
+    foreach ($SP in $serviceProfiles) {
+
+        #Populate array with existing vHBAs on this service profile
+        $vHBAs = $SP | Get-UcsVhba
+
+            #Iterate through each vHBA, and add each WWPN to this igroup
+            foreach ($vHBA in $vHBAs) {
+                Write-Host "Adding WWPN " $vHBA.Addr
+                Add-NcIgroupInitiator -Initiator $vHBA.Addr -Name Cloud -vserver $NAvserver
+            }
+    }
+
  #Use this function to "true up" an igroup so that if you add servers, you can add access to new blades without any conflicts, or manual intervention. Same idea as BFS function but catered torwards shared storage   
  #Would be nice to provide an easy way to exclude certain servers/WWPNs so that you don't have to create a single big igroup, in case you want to mask certain groups or clusters separately (i.e. management clusters)
 }
 export-modulemember -function Update-Igroup
-#>
+
+
 
 function Get-BootTargets {
     Get-NcFcpInterface
@@ -58,14 +55,31 @@ function Create-vServer {
 }
 export-modulemember -function Create-vServer
 
-#Create igroups and LUNs
-#TODO: Need to rename this function to reflect that it's aimed at BFS configuration. There should be a second function that "trues up" an single igroup for many servers, but in similar fashion.
-function Create-IGroupsAndLuns {
-    
-#Reaches into a Cisco UCS Instance, and iterates through every service profile, creating Netapp initiator groups
-#for each one, and then putting each service profile's vHBA's WWPNs in the respective initiator groups.
 
-    #We only want Service Profile Instances, not Templates
+
+
+<#
+.SYNOPSIS
+"Trues up" the BFS configuration on a Netapp array to work with Cisco UCS.
+
+.DESCRIPTION
+Reaches into a Cisco UCS Instance, and iterates through every service profile, creating Netapp initiator groups for each one, and then putting each service profile's vHBA's WWPNs in the respective initiator groups.
+
+.PARAMETER computername
+Here, the dotted keyword is followed by a single parameter name. Don't precede that with a hyphen. The following lines describe the purpose of the parameter:
+
+.PARAMETER filePath
+Provide a PARAMETER section for each parameter that your script or function accepts.
+
+.EXAMPLE
+There's no need to number your examples.
+
+.EXAMPLE
+PowerShell will number them for you when it displays your help text to a user.
+#>
+function Update-NetappCiscoBFS {
+
+    #Get SPs, not templates
     $serviceProfiles = Get-UcsServiceProfile -Type instance -Org $organization
 
     #Iterate through Service Profiles, creating boot luns and igroups, mapping as you go
@@ -105,10 +119,35 @@ function Create-IGroupsAndLuns {
         }
     }
 }
-export-modulemember -function Create-IGroupsAndLuns
+export-modulemember -function Update-NetappCiscoBFS
 
-#Generate FC switch config
+<#
+.SYNOPSIS
+Creates a Cisco NX-OS configuration snippet for zoning and aliases
+
+.DESCRIPTION
+Reaches into Cisco UCS, and either retrun
+
+.PARAMETER FabAWWPNs
+Provide a string array of all WWPNs on fabric A that you wish to include as targets in each zone.
+
+.PARAMETER FabBWWPNs
+Provide a string array of all WWPNs on fabric B that you wish to include as targets in each zone.
+
+.PARAMETER SPfilter
+Provide the name of a service profile template here to only include service profiles spawned from that template in the zoning configuration.
+Do not provide this argument if you simply wish to include all service profiles.
+
+.EXAMPLE
+There's no need to number your examples.
+#>
 function Generate-FCSwitchConfig {
+
+    param(
+        [parameter(Mandatory=${true})][string[]]$FabAWWPNs,
+        [parameter(Mandatory=${true})][string[]]$FabBWWPNs,
+        [parameter(Mandatory=${false})][string]$SPfilter
+    )
 
     $WWPNTableFabA = $null
     $WWPNTableFabA = @{}
@@ -155,7 +194,9 @@ function Generate-FCSwitchConfig {
     $WWPNTableFabA.GetEnumerator() | Sort-Object Name | % { 
         Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 435")
         Add-Content $ConfigFile ("member pwwn " + $($_.value))
-        #Need to add an argument to this function that pulls the four values from the UCS boot policy and uses them
+
+        #TODO: Need to add an argument to this function that pulls the four values from the UCS boot policy and uses them
+        #TODO: Actually, can't do that since the boot policy only has two WWPNs per fabric, not 4. Need to figure a way to correlate UCS wth the "get-boottargets" function so that you know that the WWPNs in teh boot configuration will be in this zoning config.
         Add-Content $ConfigFile "member pwwn 20:01:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "member pwwn 20:03:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "member pwwn 20:05:00:a0:98:46:b6:21"
@@ -195,7 +236,6 @@ function Generate-FCSwitchConfig {
     $WWPNTableFabB.GetEnumerator() | Sort-Object Name | % { 
         Add-Content $ConfigFile ("zone name " + $($_.key) + " vsan 436")
         Add-Content $ConfigFile ("member pwwn " + $($_.value))
-        #Need to add an argument to this function that pulls the four values from the UCS boot policy and uses them
         Add-Content $ConfigFile "member pwwn 20:00:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "member pwwn 20:02:00:a0:98:46:b6:21"
         Add-Content $ConfigFile "member pwwn 20:04:00:a0:98:46:b6:21"
@@ -223,7 +263,7 @@ function Generate-FCSwitchConfig {
 export-modulemember -function Generate-FCSwitchConfig
 
 function Get-BootTargets {
-    Get-Nc
+
 }
 export-modulemember -function Get-BootTargets
 
@@ -240,3 +280,5 @@ function Show-Calendar {
 
 }
 #export-modulemember -function Show-Calendar
+
+Write-Host "Loaded util_netapp.psm1"

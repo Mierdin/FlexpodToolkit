@@ -653,3 +653,4 @@ function Set-UcsFirmware {
 }
 export-modulemember -function Set-UcsFirmware
 
+Write-Host "Loaded util_ucs.psm1"

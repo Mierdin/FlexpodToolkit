@@ -22,8 +22,6 @@
 }
 export-modulemember -function UCS-Housekeeping
 
-UCS-Housekeeping
-
 function Create-VLANsAndVSANs {
 
     #Obviously need to move to a CSV format, perhaps take it's location as an argument
@@ -479,14 +477,14 @@ function Create-SPTemplates {
 export-modulemember -function Create-SPTemplates
 
 
-<#
-#Generate 2 Service Profiles from each template - THIS IS TERRIBLE AND UGLY AND YOU NEED TO MAKE THIS NOT SUCK
-$SPTArray = Get-UcsServiceProfile -Type updating-template | select name
-foreach ($SPTname in $SPTArray) {
-    $sptNameLength = $SPTname.name.length
-    $spName = "SP_" + $SPTname.name.substring(4, $sptNameLength - 4) + "01"
-    Add-UcsServiceProfile -Org $organization -SrcTemplName $SPTname.name -Name $spName
-    $spName = "SP_" + $SPTname.name.substring(4, $sptNameLength - 4) + "02"
-    Add-UcsServiceProfile -Org $organization -SrcTemplName $SPTname.name -Name $spName
+
+
+function Generate-SPsFromTemplate { 
+    for ($i=10; $i -le 64; $i++) {
+        Add-UcsServiceProfile -Org $organization -SrcTemplName $SPT -Name "DCB-ESXi-$i"
+        #Need to finish this. The service profiles are not bound to the template when this is done, meaning they don't get bound to the pool either.
+    }
 }
-#>
+export-modulemember -function Generate-SPsFromTemplate
+
+Write-Host "Loaded build_ucs.psm1"

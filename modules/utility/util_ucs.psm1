@@ -1,6 +1,4 @@
-﻿
-
-function Set-UcsFirmware {
+﻿function Set-UcsFirmware {
 
 # UCSM Firmware Update
 

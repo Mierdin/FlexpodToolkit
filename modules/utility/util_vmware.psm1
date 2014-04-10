@@ -44,7 +44,7 @@ function Create-VMKonAllHosts {
 
     #Using the $_ method here, equivalent to the "this" nomenclature in java and .net
     Get-VMHost -Location $locationFilter | foreach {
-    
+
         #pull address of management VMK to use as a baseline for new address (use the same last octet)
         $thisVMK = $_ | Get-VMHostNetworkAdapter -name vmk0
  

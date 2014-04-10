@@ -5,7 +5,8 @@
     Remove-UcsMacPool -MacPool default -Force
     Remove-UcsWwnPool -WwnPool default -Force
     Remove-UcsWwnPool -WwnPool node-default -Force
-    Add-UcsIpPoolBlock -IpPool isci-initiator-pool -From 1.1.1.1 -To 1.1.1.1 -Subnet 255.255.255.0 -DefGw 0.0.0.0 -PrimDns 0.0.0.0 -SecDns 0.0.0.0
+    $iscsiPool = Get-UcsIpPool -Name iscsi-initiator-pool
+    Add-UcsIpPoolBlock -IpPool $iscsiPool -From 1.1.1.1 -To 1.1.1.1 -Subnet 255.255.255.0 -DefGw 0.0.0.0 -PrimDns 0.0.0.0 -SecDns 0.0.0.0
     #TODO: really should also remove ext-mgmt and create in suborg. Would need to update SPT references as well.
 
     Set-UcsMaintenancePolicy -MaintenancePolicy default -UptimeDisr user-ack -force
@@ -39,23 +40,6 @@ function Create-VLANsAndVSANs {
     Get-UcsLanCloud | Add-UcsVlan -Name vSphere_Management -Id 443
     Get-UcsLanCloud | Add-UcsVlan -Name vCloud_Management -Id 444
 
-
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_248 -Id 448
-    Get-UcsLanCloud | Add-UcsVlan -Name Corporate_VMs -Id 449
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_250 -Id 450
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_251 -Id 451
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_252 -Id 452
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_253 -Id 453
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_254 -Id 454
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_255 -Id 455
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_256 -Id 456
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_257 -Id 457
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_258 -Id 458
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_259 -Id 459
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_260 -Id 460
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_261 -Id 461
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_262 -Id 462
-    Get-UcsLanCloud | Add-UcsVlan -Name Front_End_263 -Id 463
     Get-UcsLanCloud | Add-UcsVlan -Name F5_Real_VM_IPs -Id 499
 
     Get-UcsFiSanCloud -Id A | Add-UcsVsan -Name VSAN_A -Id 435 -fcoevlan 435 -zoningstate disabled
@@ -66,8 +50,8 @@ export-modulemember -function Create-VLANsAndVSANs
 
 function Create-ResourcePools {
 
-    #ADD Managment IP Pool Block
-    add-ucsippoolblock -IpPool "ext-mgmt" -from $mgmt_ippoolstart -to $mgmt_ippoolfinish -defgw $mgmt_ippoolgw -modifypresent:$true
+    $mgmtIPPool = get-ucsippool -Name ext-mgmt
+    add-ucsippoolblock -IpPool $mgmtIPPool -from $mgmt_ippoolstart -to $mgmt_ippoolfinish -defgw $mgmt_ippoolgw -modifypresent:$true
 
     #create UUID pools
     $uuidPool = Add-UcsUuidSuffixPool -Org $organization -Name "UUID-ESX" -AssignmentOrder "sequential" -Descr "UUID Pool - ESXi" -Prefix derived
@@ -132,11 +116,12 @@ function Create-StaticPolicies {
     #NOTWORKING -  set-ucspowergroup does not modify this... cannot find within PowerTool
 
     #CONFIGURE QOS
-    get-ucsqosclass platinum | set-ucsqosclass -mtu 9216 -Force -Adminstate disabled
-    get-ucsqosclass gold | set-ucsqosclass -mtu 9216 -Force -Adminstate disabled
+    #TODO: Need to set some proper default weights here as well
+    get-ucsqosclass platinum | set-ucsqosclass -mtu 1500 -Force -Adminstate disabled
+    get-ucsqosclass gold | set-ucsqosclass -mtu 1500 -Force -Adminstate disabled
     get-ucsqosclass silver | set-ucsqosclass -mtu 9216 -Force -Adminstate enabled
     get-ucsqosclass bronze | set-ucsqosclass -mtu 9216 -Force -Adminstate enabled
-    get-ucsqosclass best-effort | set-ucsqosclass -mtu 9216 -Force -Adminstate enabled
+    get-ucsqosclass best-effort | set-ucsqosclass -mtu 1500 -Force -Adminstate enabled
 
     #Configure NTP
     #add-ucsntpserver -name $ntp1
@@ -212,7 +197,9 @@ function Create-StaticPolicies {
     #IMPORTANT - Add UCS Maintenance Policy for user-ack. Need to map all SPs or SPTs to this policy
     Add-UcsMaintenancePolicy -Org $organization -Name "MAINT-USER-ACK" -UptimeDisr user-ack
 
-
+    #network control policies
+    Add-UcsNetworkControlPolicy -Name ESX_NETCTRL -Descr "ESXi Network Control Policy (CDP Enabled)" -Org $organization -Cdp enabled
+    Add-UcsNetworkControlPolicy -Name ORC_NETCTRL -Descr "Oracle Network Control Policy (CDP Enabled)" -Org $organization -Cdp enabled
 
 }
 export-modulemember -function Create-StaticPolicies
@@ -254,7 +241,7 @@ function Create-vNICvHBATemplates {
     #create vNIC Templates
 
     #ESXi
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-MGMT-A" -Descr "ESXi Management" -IdentPoolName "MAC-ESX-A" -Mtu 1500 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-MGMT-A" -Descr "ESXi Management" -IdentPoolName "MAC-ESX-A" -Mtu 1500 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
     $allowedVLANs = 440, 432
     $nativeVLAN = 440, 432
     foreach ($vlan in $allowedVLANs)
@@ -268,7 +255,7 @@ function Create-vNICvHBATemplates {
         }
     }
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-MGMT-B" -Descr "ESXi Management" -IdentPoolName "MAC-ESX-B" -Mtu 1500 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-MGMT-B" -Descr "ESXi Management" -IdentPoolName "MAC-ESX-B" -Mtu 1500 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
     $allowedVLANs = 440, 432
     $nativeVLAN = 440, 432
     foreach ($vlan in $allowedVLANs)
@@ -282,7 +269,7 @@ function Create-vNICvHBATemplates {
         }
     }
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ESX-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ESX-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
     $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
@@ -296,7 +283,7 @@ function Create-vNICvHBATemplates {
         }
     }
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ESX-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ESX-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
     $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
@@ -313,7 +300,7 @@ function Create-vNICvHBATemplates {
 
 
     #Oracle
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-MGMT-A" -Descr "ESXi Management" -IdentPoolName "MAC-ORC-A" -Mtu 1500 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-MGMT-A" -Descr "ESXi Management" -IdentPoolName "MAC-ORC-A" -Mtu 1500 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
     $allowedVLANs = 440, 432
     $nativeVLAN = 440, 432
     foreach ($vlan in $allowedVLANs)
@@ -327,7 +314,7 @@ function Create-vNICvHBATemplates {
         }
     }
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-MGMT-B" -Descr "ESXi Management" -IdentPoolName "MAC-ORC-B" -Mtu 1500 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-MGMT-B" -Descr "ESXi Management" -IdentPoolName "MAC-ORC-B" -Mtu 1500 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
     $allowedVLANs = 440, 432
     $nativeVLAN = 440, 432
     foreach ($vlan in $allowedVLANs)
@@ -342,7 +329,7 @@ function Create-vNICvHBATemplates {
     }
 
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ORC-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ORC-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
     $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
@@ -356,7 +343,7 @@ function Create-vNICvHBATemplates {
         }
     }
 
-    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ORC-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" 
+    $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ORC-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
     $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
@@ -480,8 +467,8 @@ export-modulemember -function Create-SPTemplates
 
 
 function Generate-SPsFromTemplate { 
-    for ($i=10; $i -le 64; $i++) {
-        Add-UcsServiceProfile -Org $organization -SrcTemplName $SPT -Name "DCB-ESXi-$i"
+    for ($i=1; $i -le 4; $i++) {
+        Add-UcsServiceProfile -Org $organization -SrcTemplName SPT-ESX -Name "ESXi-$i"
         #Need to finish this. The service profiles are not bound to the template when this is done, meaning they don't get bound to the pool either.
     }
 }

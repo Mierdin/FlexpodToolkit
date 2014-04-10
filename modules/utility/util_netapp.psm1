@@ -143,11 +143,11 @@ There's no need to number your examples.
 #>
 function Generate-FCSwitchConfig {
 
-    param(
-        [parameter(Mandatory=${true})][string[]]$FabAWWPNs,
-        [parameter(Mandatory=${true})][string[]]$FabBWWPNs,
-        [parameter(Mandatory=${false})][string]$SPfilter
-    )
+    #param(
+    #    [parameter(Mandatory=${true})][string[]]$FabAWWPNs,
+    #    [parameter(Mandatory=${true})][string[]]$FabBWWPNs,
+    #    [parameter(Mandatory=${false})][string]$SPfilter
+    #)
 
     $WWPNTableFabA = $null
     $WWPNTableFabA = @{}

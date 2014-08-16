@@ -79,7 +79,7 @@ PowerShell will number them for you when it displays your help text to a user.
 #>
 function Update-NetappCiscoBFS {
 
-    #Get SPs, not templates
+    #Pull all service profiles in the selected org
     $serviceProfiles = Get-UcsServiceProfile -Type instance -Org $organization
 
     #Iterate through Service Profiles, creating boot luns and igroups, mapping as you go

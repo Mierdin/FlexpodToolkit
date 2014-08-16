@@ -28,21 +28,24 @@
 #####TODO#######
 #TODO: need to make this script create boot policies in UCS after looking at the Netapp target interfaces
 #TODO: Need to Set-PowerCLIConfiguration so that InvalidCertificateAction is updated to accept any and all certificates so logging in can happen seamlessly
-#TODO: Figure out how to fix unencrypted KVM issue and set here?
 #TODO: Need to consider the process to add a zero programmatically (i.e. ESXi-01 vs ESXi-1). Need to figure out where this kind of thing would need to be applied, as well as consider the pros and cons of doing this.
         #big thing is when creating service profiles, you have to provide a prefix. If you just say "ESXi-" then it will start with "ESXi-1". There is no assumption about length. This length is what you have to impart.
 #TODO: As a best practice, should figure out a way to hide all output and then create your own. The script will look a lot better.
 #TODO: Figure out the "unapproved verbs" error. Also output something that lets the user know that modules are being imported
 #TODO: Really should create vNIC/vHBA placement policy section in UCS
+#TODO: How to handle non-suborg deployments
+#TODO: Be more flexible with igroup/LUN/SP naming. And/or maybe make a naming scheme more obvious. See earlier todo about SP numbering.
+#TODO: Derive configuration entirely from YAML file instead of here in the script. Make this a black box. Allow users to turn off netapp/UCS/vmware stuff in teh configuration as well.
+#TODO Consider Python for this - only thing missing is the Python bindings for Netapp. May consider writing them yourself.
 
 #Must run PowerShell v3 or higher if you use the PSScriptRoot variable
 #The -Force argument unloads the module first, which is good especially for dev. Powershell likes to remember old modules, making your changes not take effect.
-#TODO - maybe import all modules found in these directories so you don't have to update this when adding new modules
-#Import-Module $PSScriptRoot\modules\utility\util_netapp.psm1 -Force
+#TODO - maybe import all modules found in these directories so you don't have to update this when adding new modules. Is there a hot-pluggable architecture for PoSH or Python for these kind of modules?
+Import-Module $PSScriptRoot\modules\utility\util_netapp.psm1 -Force
 #Import-Module $PSScriptRoot\modules\utility\util_vmware.psm1 -Force
 
 #Import-Module $PSScriptRoot\modules\buildout\build_ucs.psm1 -Force
-Import-Module F:\Dropbox\Code\Powershell\FlexpodToolkit\modules\buildout\build_ucs.psm1 -Force
+#Import-Module F:\Dropbox\Code\Powershell\FlexpodToolkit\modules\buildout\build_ucs.psm1 -Force
 
 #Import-Module $PSScriptRoot\modules\buildout\build_vmware.psm1 -Force
  
@@ -51,7 +54,7 @@ Import-Module F:\Dropbox\Code\Powershell\FlexpodToolkit\modules\buildout\build_u
  
 #Add-PSSnapin VMware*
 Import-Module CiscoUcsPs
-#Import-Module DataONTAP
+Import-Module DataONTAP
 Write-Host "Imported Vendor Cmdlets"
 
 #region VARs
@@ -59,15 +62,15 @@ Write-Host "Imported Vendor Cmdlets"
 $NAipAddr = ""
 $NAusername = ""
 $NApassword = ""
-$NAportset = "fcoe_pset_1"
-$NAvserver = "FC_VS1"
-$NAvserverRootVol = "FC_VS1_root"
-$NAbootVol = "/vol/FC_BootVol1/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
+$NAportset = ""
+$NAvserver = ""
+$NAvserverRootVol = ""
+$NAbootVol = "/vol/esxi_boot/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
 
-$UCSipAddr = "10.12.0.76"
-$UCSusername = "config"
-$UCSpassword = "config"
-$organization = "ORG_TEST"
+$UCSipAddr = ""
+$UCSusername = ""
+$UCSpassword = ""
+$organization = ""  
 $mgmt_ippoolstart = "1.1.1.2"
 $mgmt_ippoolfinish = "1.1.1.3"
 $mgmt_ippoolgw = "1.1.1.1"
@@ -76,18 +79,19 @@ $VMWipAddr = ""
 $VMWusername = ""
 $VMWpassword = ""
 
-
+#Begin stopwatch to see how long script runs.
 $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 #endregion
 
-#region Establish Connections
+#region Establish Connections to Infrastructure
 
 #Connect to Netapp, suppressing prompts
-#$NASecPass = ConvertTo-SecureString $NApassword -AsPlainText -Force
-#$NAcred = New-Object System.Management.Automation.PSCredential($NAusername, $NASecPass)
+$NASecPass = ConvertTo-SecureString $NApassword -AsPlainText -Force
+$NAcred = New-Object System.Management.Automation.PSCredential($NAusername, $NASecPass)
 #Disconnect from Controller First
-#Connect-NcController $NAipAddr -credential $NAcred
+Disconnect-NcController
+Connect-NcController $NAipAddr -credential $NAcred
 
 #Connect to UCSM, suppressing prompts
 $UCSSecPass = ConvertTo-SecureString $UCSpassword -AsPlainText -Force
@@ -123,14 +127,14 @@ Connect-Ucs $UCSipAddr -Credential $ucsmCreds
 #}
 
 # ***** UCS TASKS  *****
-UCS-Housekeeping
-Create-VLANsAndVSANs
-Create-ResourcePools
-Create-StaticPolicies
-Create-BootPolicy
-Create-vNICvHBATemplates
-Create-SPTemplates
-Generate-SPsFromTemplate
+#UCS-Housekeeping
+#Create-VLANsAndVSANs
+#Create-ResourcePools
+#Create-StaticPolicies
+#Create-BootPolicy
+#Create-vNICvHBATemplates
+#Create-SPTemplates
+#Generate-SPsFromTemplate
 
 #There will be a menu structure here in an upcoming release, allowing you to easy and simply select provided cmdlets from a menu
 

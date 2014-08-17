@@ -1,6 +1,3 @@
-FlexpodToolkit
-==============
-
 # ABOUT
 
 A suite of scripts aimed at automating nearly every aspect of the provisioning process in a Flexpod environment. 

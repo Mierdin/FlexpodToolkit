@@ -1,4 +1,13 @@
 ﻿<#
+ Name:         Flexpod Toolkit
+ Author:       Matthew Oswalt
+ Created:      6/10/2013
+ Description:  This script is the "main" script in a toolkit designed to automate Flexpod provisioning tasks.
+               For more information, and an exhaustive, updated list of dependencies, see https://github.com/Mierdin/FlexpodToolkit
+
+#>
+
+<#
 .SYNOPSIS
 "Trues up" an initiator group.
 
@@ -46,16 +55,9 @@ export-modulemember -function Update-Igroup
 function Get-BootTargets {
     Get-NcFcpInterface
     #Gotta select one WWPN per node - gotta find out how to correspond target address with node name
+    #The above assumes four nodes. Maybe there are two nodes? Or even one - hopefully not. My point is that you need to do some math so that the addresses are spread evenly.
 }
-export-modulemember -function Get-BootTargets
-
-function Create-vServer {
-    $newVServer = New-NcVserver -Name $NAvserver -RootVolume $NAvserverRootVol -RootVolumeAggregate "aggr1_DCB6250_02_SATA" -RootVolumeSecurityStyle UNIX -NameServerSwitch nis
-    Set-NcVserver -Name $NAvserver -DisallowedProtocols iscsi,nfs 
-}
-export-modulemember -function Create-vServer
-
-
+#export-modulemember -function Get-BootTargets
 
 
 <#
@@ -262,11 +264,6 @@ function Generate-FCSwitchConfig {
 }
 export-modulemember -function Generate-FCSwitchConfig
 
-function Get-BootTargets {
-
-}
-export-modulemember -function Get-BootTargets
-
 function Show-Calendar {
 #This is an example of a function with arguments
     param(
@@ -279,6 +276,5 @@ function Show-Calendar {
 
 
 }
-#export-modulemember -function Show-Calendar
 
 Write-Host "Loaded util_netapp.psm1"

@@ -1,4 +1,6 @@
-﻿function Set-UcsFirmware {
+﻿##NOTICE - THIS FUNCTION WILL SOON BE REMOVED. BUILT CORRECTLY, A UCS ENVIRONMENT SHOULD NOT NEED THIS.
+
+function Set-UcsFirmware {
 
 # UCSM Firmware Update
 

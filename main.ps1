@@ -25,18 +25,18 @@ Write-Host "Imported Vendor Cmdlets"
 
 #region VARs
 
-$NAipAddr = ""
-$NAusername = ""
-$NApassword = ""
+$NAipAddr = "10.128.111.40"
+$NAusername = "admin"
+$NApassword = "Password123"
 $NAportset = "FC_Portset"
 $NAvserver = "Infra_Vserver"
 $NAvserverRootVol = "root_vol"
 $NAbootVol = "/vol/esxi_boot/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
 
-$UCSipAddr = ""
-$UCSusername = ""
-$UCSpassword = ""
-$organization = "ORG_TEST"
+$UCSipAddr = "10.128.109.15"
+$UCSusername = "admin"
+$UCSpassword = "Gdt02468"
+$organization = "ORG_TEST"  #using root in the G-Pod, need to ensure this will still work - what to put here if there is no suborg?
 $mgmt_ippoolstart = "1.1.1.2"
 $mgmt_ippoolfinish = "1.1.1.3"
 $mgmt_ippoolgw = "1.1.1.1"

@@ -1,4 +1,20 @@
-﻿function UCS-Housekeeping {
+﻿function Build-UcsConfiguration
+{
+    #This is where the general workflow of a UCS configuration should take place. 
+    #It is this function that is called, passed configuration args, and brokers the right configuration information to the specific functions below.
+    UCS-Housekeeping
+    Create-VLANsAndVSANs
+    Create-ResourcePools
+    Create-StaticPolicies
+    Create-BootPolicy
+    Create-vNICvHBATemplates
+    Create-SPTemplates
+    Generate-SPsFromTemplate
+}
+export-modulemember -function Build-UcsConfiguration
+
+function UCS-Housekeeping {
+    #Take care of the initial errors from the default pools
     Remove-UcsServerPool -ServerPool default -Force
     Remove-UcsIqnPoolPool -IqnPoolPool default -Force
     Remove-UcsUuidSuffixPool -UuidSuffixPool default -Force
@@ -9,11 +25,14 @@
     Add-UcsIpPoolBlock -IpPool $iscsiPool -From 1.1.1.1 -To 1.1.1.1 -Subnet 255.255.255.0 -DefGw 0.0.0.0 -PrimDns 0.0.0.0 -SecDns 0.0.0.0
     #TODO: really should also remove ext-mgmt and create in suborg. Would need to update SPT references as well.
 
+    #Ensure that the default UCS maintenance policy is set to user-ack.
     Set-UcsMaintenancePolicy -MaintenancePolicy default -UptimeDisr user-ack -force
 
+    #if the user-specified org doesn't exist, create it.
     $rootOrg = Get-UcsOrg -Level root
     $result = Get-UcsOrg -Org $rootOrg -Name $organization
     if(!$result) {
+        Write-Host "Creating org $organization"
         $ourOrg = Add-UcsOrg -Org $rootOrg -Name $organization
     } else {
         Write-host "Organization $organization already exists, skipping"
@@ -186,6 +205,8 @@ function Create-StaticPolicies {
 
     <# Need to flush out host firmware package creation here
 
+        Or maybe not, just use auto install after the script creates the policy.
+
     $host_firm_pack = Add-UcsFirmwareComputeHostPack -Name host_firm_pack -IgnoreCompCheck no
     $host_firm_pack | Add-UcsFirmwarePackItem -Type adaptor -HwModel N20-AC0002 -HwVendor "Cisco Systems Inc" -Version '1.4(1i)'
     $host_firm_pack | Get-UcsFirmwarePackItem -HwModel N20-AC0002 | Set-UcsFirmwarePackItem -Version '2.0(1t)'
@@ -270,7 +291,7 @@ function Create-vNICvHBATemplates {
     }
 
     $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ESX-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
-    $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
+    $allowedVLANs = 499, 438, 439, 441
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
     {
@@ -284,7 +305,7 @@ function Create-vNICvHBATemplates {
     }
 
     $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ESX-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ESX-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ESX_NETCTRL
-    $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
+    $allowedVLANs = 499, 438, 439, 441
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
     {
@@ -296,8 +317,6 @@ function Create-vNICvHBATemplates {
             Add-UcsVnicInterface -VnicTemplate $vNicTemplate -name $vlanName.name -DefaultNet false
         }
     }
-
-
 
     #Oracle
     $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-MGMT-A" -Descr "ESXi Management" -IdentPoolName "MAC-ORC-A" -Mtu 1500 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
@@ -330,7 +349,7 @@ function Create-vNICvHBATemplates {
 
 
     $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-A" -Descr "Nexus 1000v Uplink Fabric A" -IdentPoolName "MAC-ORC-A" -Mtu 9000 -SwitchId A -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
-    $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
+    $allowedVLANs = 499, 438, 439, 441
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
     {
@@ -344,7 +363,7 @@ function Create-vNICvHBATemplates {
     }
 
     $vNicTemplate = Add-UcsVnicTemplate -Org $organization -Name "ORC-1KV-B" -Descr "Nexus 1000v Uplink Fabric B" -IdentPoolName "MAC-ORC-B" -Mtu 9000 -SwitchId B -TemplType "updating-template" -QosPolicyName "BE" -NwCtrlPolicyName ORC_NETCTRL
-    $allowedVLANs = 434, 437, 438, 439, 441, 443, 444, 448, 449, 450, 451, 452, 453, 454, 455, 456, 457, 458, 459, 460, 461, 462, 463, 499
+    $allowedVLANs = 499, 438, 439, 441
     $nativeVLAN = 0
     foreach ($vlan in $allowedVLANs)
     {
@@ -462,9 +481,6 @@ function Create-SPTemplates {
     }
 }
 export-modulemember -function Create-SPTemplates
-
-
-
 
 function Generate-SPsFromTemplate { 
     for ($i=1; $i -le 4; $i++) {

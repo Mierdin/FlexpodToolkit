@@ -7,7 +7,6 @@
 
 #>
 
-
 #####TODO#######
 #TODO: need to make this script create boot policies in UCS after looking at the Netapp target interfaces
 #TODO: Need to Set-PowerCLIConfiguration so that InvalidCertificateAction is updated to accept any and all certificates so logging in can happen seamlessly
@@ -33,10 +32,10 @@ $NAvserver = "Infra_Vserver"
 $NAvserverRootVol = "root_vol"
 $NAbootVol = "/vol/esxi_boot/" #Needs to be of this format, including the forward slashes. LUN will be appended without any slashes
 
-$UCSipAddr = ""
-$UCSusername = ""
-$UCSpassword = ""
-$organization = ""
+$UCSipAddr = "10.12.0.74"
+$UCSusername = "config"
+$UCSpassword = "config"
+$organization = "ORG_TEST"
 $mgmt_ippoolstart = "1.1.1.2"
 $mgmt_ippoolfinish = "1.1.1.3"
 $mgmt_ippoolgw = "1.1.1.1"
@@ -60,10 +59,10 @@ $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 #Connect-NcController $NAipAddr -credential $NAcred
 
 #Connect to UCSM, suppressing prompts
-#$UCSSecPass = ConvertTo-SecureString $UCSpassword -AsPlainText -Force
-#$ucsmCreds = New-Object System.Management.Automation.PSCredential($UCSusername, $UCSSecPass)
-#Disconnect-Ucs
-#Connect-Ucs $UCSipAddr -Credential $ucsmCreds
+$UCSSecPass = ConvertTo-SecureString $UCSpassword -AsPlainText -Force
+$ucsmCreds = New-Object System.Management.Automation.PSCredential($UCSusername, $UCSSecPass)
+Disconnect-Ucs
+Connect-Ucs $UCSipAddr -Credential $ucsmCreds
 
 #Connect to vCenter, suppressing prompts
 #Disconnect-VIServer
@@ -72,7 +71,6 @@ $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 
 #endregion
 
-#
 
 #Generate-SPsFromTemplate
 #Create-VMKonAllHosts -locationFilter DCBCLOUDORC01 -newSubnet "10.104.41." -subnetMask "255.255.255.0" -strPG "vMotion" -vMotionEnabled:$True -VMKMTU 9000 -addVmnic1:$False
@@ -92,17 +90,10 @@ $Elapsed = [System.Diagnostics.Stopwatch]::StartNew()
 #    $_ | Get-VMHostNetworkAdapter -name vmk3 | Set-VMHostNetworkAdapter -Mtu 9000 -Confirm:$false
 #}
 
-# ***** UCS TASKS  *****
-#UCS-Housekeeping
-#Create-VLANsAndVSANs
-#Create-ResourcePools
-#Create-StaticPolicies
-#Create-BootPolicy
-#Create-vNICvHBATemplates
-#Create-SPTemplates
-#Generate-SPsFromTemplate
+#Kick off UCS Build
+Build-UcsConfiguration
 
-#There will be a menu structure here in an upcoming release, allowing you to easy and simply select provided cmdlets from a menu
+#There may be a menu structure here in an upcoming release, allowing you to easy and simply select provided cmdlets from a menu
 
 #Time to show off
 Write-Host "Script completed in: " $Elapsed.Elapsed

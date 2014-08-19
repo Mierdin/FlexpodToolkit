@@ -157,32 +157,11 @@ function Create-StaticPolicies {
     #add-ucssnmptrap -hostname $traphost2 -community $snmpcomm -notificationtype traps -port 162 -version v2c
 
     #Create QOS Policies
-    Start-UcsTransaction
-    $mo = Get-UcsOrg -Name $organization | Add-UcsQosPolicy -Name BE
-    $mo_1 = $mo | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl full -Prio "best-effort" -Rate line-rate
-    Complete-UcsTransaction
-
-    Start-UcsTransaction
-    $mo = Get-UcsOrg -Name $organization | Add-UcsQosPolicy -Name Bronze
-    $mo_1 = $mo | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "bronze" -Rate line-rate
-    Complete-UcsTransaction
-
-    Start-UcsTransaction
-    $mo = Get-UcsOrg -Name $organization | Add-UcsQosPolicy -Name Gold
-    $mo_1 = $mo | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "gold" -Rate line-rate
-    Complete-UcsTransaction
-
-    Start-UcsTransaction
-    $mo = Get-UcsOrg -Name $organization | Add-UcsQosPolicy -Name Platinum
-    $mo_1 = $mo | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "platinum" -Rate line-rate
-    Complete-UcsTransaction
-
-    Start-UcsTransaction
-    $mo = Get-UcsOrg -Name $organization | Add-UcsQosPolicy -Name Silver
-    $mo_1 = $mo | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "silver" -Rate line-rate
-    Complete-UcsTransaction
-
-
+    Add-UcsQosPolicy -Org $organization -Name BE | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl full -Prio "best-effort" -Rate line-rate
+    Add-UcsQosPolicy -Org $organization -Name Bronze | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "bronze" -Rate line-rate
+    Add-UcsQosPolicy -Org $organization -Name Gold | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "gold" -Rate line-rate
+    Add-UcsQosPolicy -Org $organization -Name Platinum | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "platinum" -Rate line-rate
+    Add-UcsQosPolicy -Org $organization -Name Silver | Add-UcsVnicEgressPolicy -ModifyPresent -Burst 10240 -HostControl none -Prio "silver" -Rate line-rate
 
     #Server Pool Qualification Policies and map to Server Pool 
     $SPQname = "B200-M3-QUAL"

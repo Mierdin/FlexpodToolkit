@@ -10,7 +10,9 @@ In summary, the module named CiscoUCS doesn't necessarily just reach into Cisco 
 
 # STATUS
 
-This is a work in progress, and is under active development. My goal is to make most large changes in a branch, but until it reaches a mature state, lots of changes will be made.
+This project will likely soon come to a halt. I have been considering moving these functions to Python, and I am working on making those ideas real in my new project, [PyFlex](https://github.com/Mierdin/pyflex)
+
+This project is still my go-to for building new Flexpod Configurations, as I know it works, and I haven't gotten PyFlex up to the quality I need it to be at yet, but it is the direction I want to go. So for now, enjoy these scripts, and keep an eye out for PyFlex.
 
 # SUPPORTED PRODUCTS
 
